@@ -4,6 +4,15 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    /*
+     Singleton class 
+     
+     Key Parameters:
+
+     Responsible for:
+        - Storing current pet animal
+     */
+
     static GameManager _instance;
 
     public static GameManager Instance
@@ -28,7 +37,14 @@ public class GameManager : MonoBehaviour
         _instance = this;
     }
 
-   
+    private void OnEnable()
+    {
+        BoardManager.OnPetAnimalDropped += DroppedPetAnimal;
+    }
+    private void OnDisable()
+    {
+        BoardManager.OnPetAnimalDropped -= DroppedPetAnimal;
+    }
 
 
     // Update is called once per frame

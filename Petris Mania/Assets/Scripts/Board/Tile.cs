@@ -4,6 +4,19 @@ using UnityEngine;
 
 public class Tile : MonoBehaviour
 {
+    /*
+     Key Parameters:
+        - owner - pet animal that owns the tile
+
+     Responsible for:
+        - create tinted or base color tile
+        - on mouse over -> report to board manager
+        - on mouse exit -> report to board manager
+        - Highlight on hover based on placeable (highlighted even if it is part of movable positions in pet Animal)
+        - Handle if tile is available or not
+        - Reset to default
+     */
+
     [SerializeField]
     Color baseColor, tintedColor;
 
@@ -16,24 +29,13 @@ public class Tile : MonoBehaviour
     SpriteRenderer sprite;
 
     [SerializeField]
-    GameObject currentHighlighter;
+    GameObject currentHighlighter, occupiedTile;
+
+    PetAnimal owner;
 
     bool isAvailable = true;
 
     int _x = 0, _y = 0;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-    
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     public void OnCreate(int x, int y, bool tinted)
     {
@@ -58,10 +60,15 @@ public class Tile : MonoBehaviour
         currentHighlighter.SetActive(true);
     }
 
-    public void ResetToDefault()
+    private void OnMouseExit()
     {
-        sprite.color = originalColor;
+        // this shoule be changed
+        BoardManager.Instance.ResetTileColor();
+
+        BoardManager.Instance.RemoveMouseOverTile(_x, _y);
+        currentHighlighter.SetActive(false);
     }
+
 
     public void HighlightTile(bool placeable)
     {
@@ -75,21 +82,39 @@ public class Tile : MonoBehaviour
         }
     }
 
-    private void OnMouseExit()
+    public void ResetToDefault()
     {
-        currentHighlighter.SetActive(false);
-        BoardManager.Instance.ResetTileColor();
+        sprite.color = originalColor;
     }
 
-    public void SetAvailable(bool available)
+    void SetAvailable(bool available)
     {
         isAvailable = available;
     }
 
-
     public bool IsAvailable()
     {
         return isAvailable;
+    }
+
+    public void SetTileOccupied(PetAnimal petAnimal)
+    {
+        owner = petAnimal;
+        SetAsOccupiedTile();
+        SetAvailable(false);
+    }
+
+    void SetAsOccupiedTile()
+    {
+        occupiedTile.GetComponent<SpriteRenderer>().color = owner.GetColor();   
+        //occupiedTile.SetActive(true);
+    }
+
+
+
+    public void SetOwner(PetAnimal petAnimal)
+    {
+        owner = petAnimal;
     }
 
 

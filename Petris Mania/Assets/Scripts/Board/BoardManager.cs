@@ -5,6 +5,22 @@ using UnityEngine;
 
 public class BoardManager : MonoBehaviour
 {
+    /*
+     Singleton class 
+     
+     Key Parameters:
+        - Width, height
+        - Board of tiles - 2D List
+
+     Responsible for:
+        - creating board
+        - handling board input - tile reports to board manager on mouse over
+        - checking if pet animal placeable on the board
+        - Setting tiles back on mouseover - based on placeable (current pet animal movable positions)
+        - Input up - Drop the animal
+        - Reset tiles to default color 
+     */
+
     [SerializeField]
     int width = 5, height = 5;
 
@@ -14,6 +30,8 @@ public class BoardManager : MonoBehaviour
     bool isPlaceable;
 
     int mouseOverTileX, mouseOverTileY;
+
+    bool mouseInsideBoard = false;
 
     List<List<Tile>> boardTiles = new List<List<Tile>>();
 
@@ -37,46 +55,9 @@ public class BoardManager : MonoBehaviour
     void Start()
     { 
         CreateBoard();
-        Debug.Log(boardTiles.Count +" "+ boardTiles[0].Count);
     }
 
-    private void Update()
-    {
-        if (Input.GetMouseButtonUp(0))
-        {
-            DropCurrentPetOnBoard();
-        }
-    }
-
-    private void DropCurrentPetOnBoard()
-    {
-        if (GameManager.Instance.GetCurrentPetAnimal() != null)
-        {
-            PetAnimal currentAnimal = GameManager.Instance.GetCurrentPetAnimal();
-            if (IsPlaceable(mouseOverTileX, mouseOverTileY))
-            {
-                // disable
-                foreach (Vector2 moveablePos in currentAnimal.GetMovablePositions())
-                {
-                    int newPosX = (int)moveablePos.x + mouseOverTileX;
-                    int newPosY = (int)moveablePos.y + mouseOverTileY;
-
-                 
-                    boardTiles[newPosY][newPosX].SetAvailable(false);
-                    currentAnimal.SetState(PetState.OnBoard);
-                    Debug.Log("already set! " + currentAnimal);
-                }
-
-            }
-            else
-            {
-                Debug.Log("reset");
-                currentAnimal.ResetToOriginalPosition();
-            }
-        }
-        GameManager.Instance.DroppedPetAnimal();
-    }
-
+    
     void CreateBoard()
     {
         float widthOffset = width / 2;
@@ -112,6 +93,47 @@ public class BoardManager : MonoBehaviour
        
     }
 
+    private void Update()
+    {
+        if (Input.GetMouseButtonUp(0))
+        {
+            DropCurrentPetOnBoard();
+        }
+    }
+
+    private void DropCurrentPetOnBoard()
+    {
+        if (GameManager.Instance.GetCurrentPetAnimal() != null)
+        {
+            PetAnimal currentAnimal = GameManager.Instance.GetCurrentPetAnimal();
+
+            if (IsPlaceable(mouseOverTileX, mouseOverTileY) && mouseInsideBoard == true)
+            {
+                // disable
+                foreach (Vector2 moveablePos in currentAnimal.GetMovablePositions())
+                {
+                    int newPosX = (int)moveablePos.x + mouseOverTileX;
+                    int newPosY = (int)moveablePos.y + mouseOverTileY;
+
+
+                    boardTiles[newPosY][newPosX].SetTileOccupied(currentAnimal);
+                }
+
+                currentAnimal.DroppedOnBoard(true);
+            }
+            else
+            {
+                currentAnimal.DroppedOnBoard(false);
+            }
+        }
+
+
+        if (OnPetAnimalDropped != null)
+        {
+            OnPetAnimalDropped();
+        }
+    }
+
     public void ResetTileColor()
     {
         foreach (List<Tile> row in boardTiles)
@@ -125,13 +147,6 @@ public class BoardManager : MonoBehaviour
 
     public void SetMouseOverTile(int x, int y)
     {
-        // mouse over tile set here
-        // based on current animal
-        // find if all the movable tiles are available
-        // get placeable or not
-        // highlight them based on color of placeable
-
-
         ResetTileColor();
 
         if (GameManager.Instance.GetCurrentPetAnimal() != null)
@@ -150,9 +165,18 @@ public class BoardManager : MonoBehaviour
         }
         mouseOverTileX = x;
         mouseOverTileY = y;
-
+        mouseInsideBoard = true;
 
     }
+
+    public void RemoveMouseOverTile(int x, int y)
+    {
+        if (mouseOverTileX == x && mouseOverTileY == y)
+        {
+            mouseInsideBoard = false;
+        }
+    }
+
 
     bool IsPlaceable(int x, int y)
     {
@@ -180,4 +204,9 @@ public class BoardManager : MonoBehaviour
 
         return true;
     }
+
+    public delegate void OnPetAnimalDroppedHandler();
+    public static event OnPetAnimalDroppedHandler OnPetAnimalDropped;
 }
+
+

@@ -4,6 +4,19 @@ using UnityEngine;
 
 public class PetAnimal : MonoBehaviour
 {
+    /*
+    Key Parameters:
+        - pet state
+        - movable positions
+        - path of movement
+        - myTiles - the tiles that pet animal owns
+      
+     Responsible for:
+        - Drag of pet animal - (Disable collider on pick and enable collider if dropped and not placeable)
+        - Set current pet animal to the game manager
+        - Handle dropped on board and pet state
+     */
+
     bool isDrag = false;
 
     PetState petState = PetState.Inventory; 
@@ -12,7 +25,12 @@ public class PetAnimal : MonoBehaviour
     BoxCollider2D collider;
 
     [SerializeField]
+    Color tileColor;
+
+    [SerializeField]
     List<Vector2> movablePositions = new List<Vector2>();
+
+    List<Tile> tiles = new List<Tile>();
 
     Vector2 startPosition;
 
@@ -49,14 +67,26 @@ public class PetAnimal : MonoBehaviour
         return movablePositions;
     }
 
-    public void ResetToOriginalPosition()
+    public void DroppedOnBoard(bool placeable)
+    {
+        if (placeable)
+        {
+            SetState(PetState.OnBoard);
+        }
+        else
+        {
+            ResetToOriginalPosition();
+        }
+    }
+
+    void ResetToOriginalPosition()
     {
         isDrag = false;
         collider.enabled = true;
         transform.position = startPosition;
     }
 
-    public void SetState(PetState state)
+    void SetState(PetState state)
     {
         petState = state;
 
@@ -65,6 +95,21 @@ public class PetAnimal : MonoBehaviour
             collider.enabled = false;
             isDrag = false;
         }
+    }
+
+    public Color GetColor()
+    {
+        return tileColor;
+    }
+
+    private void SetTiles(List<Tile> tilesOccupied)
+    {
+        tiles = tilesOccupied;
+    }
+
+    public List<Tile> GetTiles()
+    {
+        return tiles;
     }
 
 
