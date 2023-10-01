@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,14 +11,70 @@ public class BoardManager : MonoBehaviour
     [SerializeField]
     Tile tilePrefab;
 
+    bool isPlaceable;
+
+    int mouseOverTileX, mouseOverTileY;
+
     List<List<Tile>> boardTiles = new List<List<Tile>>();
 
+    static BoardManager _instance;
 
-    // Start is called before the first frame update
-    void Start()
+    public static BoardManager Instance
     {
-     
+        get { return _instance; }
+    }
+
+
+    private void Awake()
+    {
+        if (_instance == null)
+        {
+            _instance = this;
+        }
+
+    }
+
+    void Start()
+    { 
         CreateBoard();
+        Debug.Log(boardTiles.Count +" "+ boardTiles[0].Count);
+    }
+
+    private void Update()
+    {
+        if (Input.GetMouseButtonUp(0))
+        {
+            DropCurrentPetOnBoard();
+        }
+    }
+
+    private void DropCurrentPetOnBoard()
+    {
+        if (GameManager.Instance.GetCurrentPetAnimal() != null)
+        {
+            PetAnimal currentAnimal = GameManager.Instance.GetCurrentPetAnimal();
+            if (IsPlaceable(mouseOverTileX, mouseOverTileY))
+            {
+                // disable
+                foreach (Vector2 moveablePos in currentAnimal.GetMovablePositions())
+                {
+                    int newPosX = (int)moveablePos.x + mouseOverTileX;
+                    int newPosY = (int)moveablePos.y + mouseOverTileY;
+
+                 
+                    boardTiles[newPosY][newPosX].SetAvailable(false);
+                    currentAnimal.SetState(PetState.OnBoard);
+                    Debug.Log("already set! " + currentAnimal);
+                }
+
+            }
+            else
+            {
+                Debug.Log("reset");
+                currentAnimal.ResetToOriginalPosition();
+            }
+        }
+        GameManager.Instance.DroppedPetAnimal();
     }
 
     void CreateBoard()
@@ -44,7 +101,7 @@ public class BoardManager : MonoBehaviour
 
                 // tint alternate ones
                 bool tinted = (i % 2 == 0 && j % 2 != 0) || (j % 2 == 0 && i % 2 != 0);
-                newTile.OnCreate(tinted);
+                newTile.OnCreate(j,i,tinted);
 
                 // store the new tile
                 newBoardRow.Add(newTile);
@@ -55,43 +112,72 @@ public class BoardManager : MonoBehaviour
        
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ResetTileColor()
     {
-      //  DetectBoardInteraction();
+        foreach (List<Tile> row in boardTiles)
+        {
+            foreach (Tile tile in row)
+            {
+                tile.ResetToDefault();
+            }
+        }
     }
 
-    //void DetectBoardInteraction()
-    //{
-    //    Tile currentTile = null;
-    //    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-    //    RaycastHit2D[] hits;
+    public void SetMouseOverTile(int x, int y)
+    {
+        // mouse over tile set here
+        // based on current animal
+        // find if all the movable tiles are available
+        // get placeable or not
+        // highlight them based on color of placeable
 
-    //    hits = Physics2D.RaycastAll(ray.origin, ray.direction);
 
-    //    foreach (RaycastHit2D hit in hits)
-    //    {
-    //        currentTile = hit.transform.GetComponent<Tile>();
-    //        if (currentTile)
-    //        {
-    //            currentTile.MouseOver();
-    //        }
-    //        else
-    //        {
-    //            currentTile = null;
-    //        }
-    //    }
+        ResetTileColor();
 
-    //    foreach(List<Tile> row in boardTiles)
-    //    {
-    //        foreach(Tile tile in row)
-    //        {
-              
-    //            if (currentTile != null && tile != currentTile)
-    //            {
-    //                tile.MouseExit();
-    //            }
-    //        }
-    //    }
-    //}
+        if (GameManager.Instance.GetCurrentPetAnimal() != null)
+        {
+            isPlaceable = IsPlaceable(x, y);
+            PetAnimal currentAnimal = GameManager.Instance.GetCurrentPetAnimal();
+            foreach (Vector2 moveablePos in currentAnimal.GetMovablePositions())
+            {
+                int newPosX = (int)moveablePos.x + x;
+                int newPosY = (int)moveablePos.y + y;
+                if (newPosX < boardTiles[0].Count && newPosX >= 0 && newPosY < boardTiles.Count && newPosY >= 0)
+                {
+                    boardTiles[newPosY][newPosX].HighlightTile(isPlaceable);
+                }
+            }
+        }
+        mouseOverTileX = x;
+        mouseOverTileY = y;
+
+
+    }
+
+    bool IsPlaceable(int x, int y)
+    {
+
+        if (GameManager.Instance.GetCurrentPetAnimal() != null)
+        {
+            PetAnimal currentAnimal = GameManager.Instance.GetCurrentPetAnimal();
+            foreach (Vector2 moveablePos in currentAnimal.GetMovablePositions())
+            {
+                int newPosX = (int)moveablePos.x + x;
+                int newPosY = (int)moveablePos.y + y;
+
+                // check if new pos within bounds and new pos is available tile
+                if (newPosX >= boardTiles[0].Count || newPosX < 0 || newPosY >= boardTiles.Count || newPosY < 0)
+                {
+                    return false;
+                }
+                if (!boardTiles[newPosY][newPosX].IsAvailable())
+                {
+                    return false;
+                }
+
+            }
+        }
+
+        return true;
+    }
 }

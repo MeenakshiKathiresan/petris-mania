@@ -7,10 +7,20 @@ public class Tile : MonoBehaviour
     [SerializeField]
     Color baseColor, tintedColor;
 
+    Color originalColor;
+
+    [SerializeField]
+    Color placeableColor, nonPlaceableColor;
+
     [SerializeField]
     SpriteRenderer sprite;
 
-    bool isAvailable;
+    [SerializeField]
+    GameObject currentHighlighter;
+
+    bool isAvailable = true;
+
+    int _x = 0, _y = 0;
 
 
     // Start is called before the first frame update
@@ -25,7 +35,7 @@ public class Tile : MonoBehaviour
         
     }
 
-    public void OnCreate(bool tinted)
+    public void OnCreate(int x, int y, bool tinted)
     {
         if (tinted)
         {
@@ -35,20 +45,52 @@ public class Tile : MonoBehaviour
         {
             sprite.color = baseColor;
         }
+        _x = x;
+        _y = y;
+
+        originalColor = sprite.color;
     }
 
 
     private void OnMouseOver()
     {
-        Color fainted = sprite.color;
-        fainted.a = 0.2f;
-        sprite.color = fainted;
+        BoardManager.Instance.SetMouseOverTile(_x, _y);
+        currentHighlighter.SetActive(true);
+    }
+
+    public void ResetToDefault()
+    {
+        sprite.color = originalColor;
+    }
+
+    public void HighlightTile(bool placeable)
+    {
+        if (placeable)
+        {
+            sprite.color = placeableColor;
+        }
+        else
+        {
+            sprite.color = nonPlaceableColor;
+        }
     }
 
     private void OnMouseExit()
     {
-        Color unfainted = sprite.color;
-        unfainted.a = 1f;
-        sprite.color = unfainted;
+        currentHighlighter.SetActive(false);
+        BoardManager.Instance.ResetTileColor();
     }
+
+    public void SetAvailable(bool available)
+    {
+        isAvailable = available;
+    }
+
+
+    public bool IsAvailable()
+    {
+        return isAvailable;
+    }
+
+
 }
